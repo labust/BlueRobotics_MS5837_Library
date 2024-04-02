@@ -48,34 +48,35 @@ bool MS5837::init(TwoWire &wirePort) {
 		_i2cPort->requestFrom(MS5837_ADDR,2);
 		C[i] = (_i2cPort->read() << 8) | _i2cPort->read();
 	}
+	_model = MS5837_30BA;
 
 	// Verify that data is correct with CRC
-	uint8_t crcRead = C[0] >> 12;
-	uint8_t crcCalculated = crc4(C);
+	// uint8_t crcRead = C[0] >> 12;
+	// uint8_t crcCalculated = crc4(C);
 
-	if ( crcCalculated != crcRead ) {
-		return false; // CRC fail
-	}
+	// if ( crcCalculated != crcRead ) {
+	// 	return false; // CRC fail
+	// }
 
-	uint8_t version = (C[0] >> 5) & 0x7F; // Extract the sensor version from PROM Word 0
+	// uint8_t version = (C[0] >> 5) & 0x7F; // Extract the sensor version from PROM Word 0
 
-	// Set _model according to the sensor version
-	if (version == MS5837_02BA01)
-	{
-		_model = MS5837_02BA;
-	}
-	else if (version == MS5837_02BA21)
-	{
-		_model = MS5837_02BA;
-	}
-	else if (version == MS5837_30BA26)
-	{
-		_model = MS5837_30BA;
-	}
-	else
-	{
-		_model = MS5837_UNRECOGNISED;
-	}
+	// // Set _model according to the sensor version
+	// if (version == MS5837_02BA01)
+	// {
+	// 	_model = MS5837_02BA;
+	// }
+	// else if (version == MS5837_02BA21)
+	// {
+	// 	_model = MS5837_02BA;
+	// }
+	// else if (version == MS5837_30BA26)
+	// {
+	// 	_model = MS5837_30BA;
+	// }
+	// else
+	// {
+	// 	_model = MS5837_UNRECOGNISED;
+	// }
 	// The sensor has passed the CRC check, so we should return true even if
 	// the sensor version is unrecognised.
 	// (The MS5637 has the same address as the MS5837 and will also pass the CRC check)
@@ -83,17 +84,17 @@ bool MS5837::init(TwoWire &wirePort) {
 	return true;
 }
 
-void MS5837::setModel(uint8_t model) {
-	_model = model;
-}
+// void MS5837::setModel(uint8_t model) {
+// 	_model = model;
+// }
 
-uint8_t MS5837::getModel() {
-	return (_model);
-}
+// uint8_t MS5837::getModel() {
+// 	return (_model);
+// }
 
-void MS5837::setFluidDensity(float density) {
-	fluidDensity = density;
-}
+// void MS5837::setFluidDensity(float density) {
+// 	fluidDensity = density;
+// }
 
 void MS5837::read() {
 	static uint32_t pressReadStartTime = 0;
@@ -170,27 +171,27 @@ void MS5837::calculate() {
 
 	// Terms called
 	dT = D2_temp-uint32_t(C[5])*256l;
-	if ( _model == MS5837_02BA ) {
-		SENS = int64_t(C[1])*65536l+(int64_t(C[3])*dT)/128l;
-		OFF = int64_t(C[2])*131072l+(int64_t(C[4])*dT)/64l;
-		P = (D1_pres*SENS/(2097152l)-OFF)/(32768l);
-	} else {
+	// if ( _model == MS5837_02BA ) {
+	// 	SENS = int64_t(C[1])*65536l+(int64_t(C[3])*dT)/128l;
+	// 	OFF = int64_t(C[2])*131072l+(int64_t(C[4])*dT)/64l;
+	// 	P = (D1_pres*SENS/(2097152l)-OFF)/(32768l);
+	// } else {
 		SENS = int64_t(C[1])*32768l+(int64_t(C[3])*dT)/256l;
 		OFF = int64_t(C[2])*65536l+(int64_t(C[4])*dT)/128l;
 		P = (D1_pres*SENS/(2097152l)-OFF)/(8192l);
-	}
+	//}
 
 	// Temp conversion
 	TEMP = 2000l+int64_t(dT)*C[6]/8388608LL;
 
 	//Second order compensation
-	if ( _model == MS5837_02BA ) {
-		if((TEMP/100)<20){         //Low temp
-			Ti = (11*int64_t(dT)*int64_t(dT))/(34359738368LL);
-			OFFi = (31*(TEMP-2000)*(TEMP-2000))/8;
-			SENSi = (63*(TEMP-2000)*(TEMP-2000))/32;
-		}
-	} else {
+	// if ( _model == MS5837_02BA ) {
+	// 	if((TEMP/100)<20){         //Low temp
+	// 		Ti = (11*int64_t(dT)*int64_t(dT))/(34359738368LL);
+	// 		OFFi = (31*(TEMP-2000)*(TEMP-2000))/8;
+	// 		SENSi = (63*(TEMP-2000)*(TEMP-2000))/32;
+	// 	}
+	// } else {
 		if((TEMP/100)<20){         //Low temp
 			Ti = (3*int64_t(dT)*int64_t(dT))/(8589934592LL);
 			OFFi = (3*(TEMP-2000)*(TEMP-2000))/2;
@@ -205,27 +206,27 @@ void MS5837::calculate() {
 			OFFi = (1*(TEMP-2000)*(TEMP-2000))/16;
 			SENSi = 0;
 		}
-	}
+	//}
 
 	OFF2 = OFF-OFFi;           //Calculate pressure and temp second order
 	SENS2 = SENS-SENSi;
 
 	TEMP = (TEMP-Ti);
 
-	if ( _model == MS5837_02BA ) {
-		P = (((D1_pres*SENS2)/2097152l-OFF2)/32768l);
-	} else {
+	// if ( _model == MS5837_02BA ) {
+	// 	P = (((D1_pres*SENS2)/2097152l-OFF2)/32768l);
+	// } else {
 		P = (((D1_pres*SENS2)/2097152l-OFF2)/8192l);
-	}
+	//}
 }
 
 float MS5837::pressure(float conversion) {
-	if ( _model == MS5837_02BA ) {
-		return P*conversion/100.0f;
-	}
-	else {
+	// if ( _model == MS5837_02BA ) {
+	// 	return P*conversion/100.0f;
+	// }
+	// else {
 		return P*conversion/10.0f;
-	}
+	//}
 }
 
 float MS5837::temperature() {
@@ -247,28 +248,28 @@ float MS5837::altitude() {
 }
 
 
-uint8_t MS5837::crc4(uint16_t n_prom[]) {
-	uint16_t n_rem = 0;
+// uint8_t MS5837::crc4(uint16_t n_prom[]) {
+// 	uint16_t n_rem = 0;
 
-	n_prom[0] = ((n_prom[0]) & 0x0FFF);
-	n_prom[7] = 0;
+// 	n_prom[0] = ((n_prom[0]) & 0x0FFF);
+// 	n_prom[7] = 0;
 
-	for ( uint8_t i = 0 ; i < 16; i++ ) {
-		if ( i%2 == 1 ) {
-			n_rem ^= (uint16_t)((n_prom[i>>1]) & 0x00FF);
-		} else {
-			n_rem ^= (uint16_t)(n_prom[i>>1] >> 8);
-		}
-		for ( uint8_t n_bit = 8 ; n_bit > 0 ; n_bit-- ) {
-			if ( n_rem & 0x8000 ) {
-				n_rem = (n_rem << 1) ^ 0x3000;
-			} else {
-				n_rem = (n_rem << 1);
-			}
-		}
-	}
+// 	for ( uint8_t i = 0 ; i < 16; i++ ) {
+// 		if ( i%2 == 1 ) {
+// 			n_rem ^= (uint16_t)((n_prom[i>>1]) & 0x00FF);
+// 		} else {
+// 			n_rem ^= (uint16_t)(n_prom[i>>1] >> 8);
+// 		}
+// 		for ( uint8_t n_bit = 8 ; n_bit > 0 ; n_bit-- ) {
+// 			if ( n_rem & 0x8000 ) {
+// 				n_rem = (n_rem << 1) ^ 0x3000;
+// 			} else {
+// 				n_rem = (n_rem << 1);
+// 			}
+// 		}
+// 	}
 
-	n_rem = ((n_rem >> 12) & 0x000F);
+// 	n_rem = ((n_rem >> 12) & 0x000F);
 
-	return n_rem ^ 0x00;
-}
+// 	return n_rem ^ 0x00;
+// }

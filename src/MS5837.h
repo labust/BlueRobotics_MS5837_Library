@@ -58,13 +58,13 @@ public:
 	/** Set model of MS5837 sensor. Valid options are MS5837::MS5837_30BA (default)
 	 * and MS5837::MS5837_02BA.
 	 */
-	void setModel(uint8_t model);
-	uint8_t getModel();
+	//void setModel(uint8_t model);
+	//uint8_t getModel();
 
 	/** Provide the density of the working fluid in kg/m^3. Default is for
 	 * seawater. Should be 997 for freshwater.
 	 */
-	void setFluidDensity(float density);
+	//void setFluidDensity(float density);
 
 	/** The read from I2C takes up to 40 ms, so use sparingly is possible.
 	 */
@@ -105,7 +105,7 @@ private:
 	 */
 	void calculate();
 
-	uint8_t crc4(uint16_t n_prom[]);
+	//uint8_t crc4(uint16_t n_prom[]);
 };
 
 #endif
